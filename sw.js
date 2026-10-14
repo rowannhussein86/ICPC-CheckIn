@@ -1,4 +1,4 @@
-const CACHE = 'icpc-checkin-v18';
+const CACHE = 'icpc-checkin-v19';
 
 const SHELL = [
   './',
