@@ -1,24 +1,17 @@
-/* =========================================================
-   ICPC Check-in – app.js
-   Offline-first: students + records live in localStorage,
-   and are synced to a Google Apps Script web app.
-   ========================================================= */
 (() => {
 'use strict';
 
-/* ---------- Config ---------- */
-const BATCH_SIZE    = 50;     // records per sync request
-const SCAN_COOLDOWN = 3000;  // ms before the same QR is accepted again
-const FETCH_TIMEOUT = 20000; // ms
-const TZ            = 'Africa/Cairo'; // same zone for every device (handles DST)
+const BATCH_SIZE    = 50;     
+const SCAN_COOLDOWN = 3000;  
+const FETCH_TIMEOUT = 20000; 
+const TZ            = 'Africa/Cairo'; 
 
-/* ---------- Helpers ---------- */
 const $ = id => document.getElementById(id);
 const norm = v => String(v ?? '').trim().toLowerCase();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: TZ });
 const shortDate = ts => new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', timeZone: TZ });
-// Which session are we registering? "auto" follows the sheet; a number is chosen by hand.
+
 const isManual   = () => meta.pick && meta.pick !== 'auto';
 const curSession = () => isManual() ? Number(meta.pick) : (meta.serverSession || meta.session || null);
 
@@ -48,13 +41,12 @@ const store = {
   }
 };
 
-/* ---------- State ---------- */
-let students = store.get('icpc.students', []);       // [{id,name,team,university,owed,checkedIn,note}]
-let records  = store.get('icpc.records', []);        // [{uid,type,id,name,ts,paid,balance,status,error}]
+let students = store.get('icpc.students', []);      
+let records  = store.get('icpc.records', []);    
 let cfg      = store.get('icpc.cfg', { url: '', code: '' });
 let meta     = store.get('icpc.meta', { studentsAt: 0, syncAt: 0 });
 let index    = new Map();
-let current  = null;      // student currently shown in the verdict box
+let current  = null;    
 let syncing  = false;
 let scanner  = null, scanning = false;
 let lastText = '', lastAt = 0;
@@ -63,7 +55,6 @@ const rebuildIndex = () => { index = new Map(students.map(s => [norm(s.id), s]))
 const saveStudents = () => store.set('icpc.students', students);
 const saveRecords  = () => store.set('icpc.records', records);
 
-/* ---------- Toast ---------- */
 let toastTimer;
 function toast(msg, kind = '') {
   const t = $('toast');
@@ -73,7 +64,6 @@ function toast(msg, kind = '') {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-/* ---------- Navigation ---------- */
 function go(view) {
   ['scan', 'log', 'set'].forEach(v => {
     const el = $('view-' + v);
@@ -86,7 +76,6 @@ function go(view) {
   window.scrollTo(0, 0);
 }
 
-/* ---------- Session picker (header) ---------- */
 function updateSessionUI() {
   const sel = $('sessSel');
   if (!sel) return;
@@ -120,11 +109,9 @@ function resetVerdict() {
   current = null;
 }
 
-/* ---------- Today's numbers (Log tab) ---------- */
 function sessionTotals(n) {
   const t = (meta.totals && meta.totals[n - 1]) || { count: 0, paid: 0, remaining: 0 };
   let count = t.count, paid = t.paid, rem = t.remaining;
-  // add what this phone saved but the last download of the list doesn't contain yet
   records.forEach(r => {
     if ((r.session || curSession()) !== n) return;
     const notInList = r.status === 'pending' || (r.status === 'synced' && r.syncedAt > (meta.studentsAt || 0));
@@ -171,7 +158,6 @@ function renderToday() {
   $('tRem').textContent  = fmtMoney(t.rem);
 }
 
-/* ---------- Counters / header ---------- */
 function updateCounts() {
   const c = { synced: 0, pending: 0, failed: 0 };
   records.forEach(r => { c[r.status] = (c[r.status] || 0) + 1; });
@@ -206,7 +192,6 @@ function updateNet() {
   $('netTxt').textContent = on ? 'Online' : 'Offline';
 }
 
-/* ---------- Log ---------- */
 function renderLog() {
   const ul = $('logList');
   ul.textContent = '';
@@ -233,7 +218,6 @@ function renderLog() {
   });
 }
 
-/* ---------- Remaining balance (money we still hold for the student) ---------- */
 function renderRemaining(st) {
   let box = $('vRem');
   if (!box) {
@@ -272,7 +256,6 @@ function settleRemaining() {
   if (navigator.onLine && cfg.url) sync(true).then(() => refreshStudents(true));
 }
 
-/* ---------- Student info: totals + attendance per session ---------- */
 function renderInfo(st) {
   let box = $('vInfo');
   if (!box) {
@@ -326,11 +309,10 @@ function renderInfo(st) {
   sess.hidden = att.length === 0;
 }
 
-/* ---------- Verdict ---------- */
 function show(state, title, st, extra = {}) {
   const v = $('verdict');
   v.className = 'verdict ' + state;
-  void v.offsetWidth;               // restart the pop animation
+  void v.offsetWidth;              
   v.classList.add('pop');
 
   $('vIdle').hidden = true;
@@ -376,11 +358,10 @@ function show(state, title, st, extra = {}) {
     m.appendChild(span);
   }
 
-  const form = !!extra.form;        // payment form only while waiting for the money
-  $('vOwed').hidden = true;         // replaced by the info block below
+  const form = !!extra.form;        
+  $('vOwed').hidden = true;         
   renderInfo(st);
 
-  // status line (e.g. "Already checked in") AND the sheet's Description (notes), both visible
   const noteEl = $('vNote');
   noteEl.textContent = '';
   const statusNote = extra.note || '';
@@ -407,7 +388,6 @@ function show(state, title, st, extra = {}) {
   if (navigator.vibrate) navigator.vibrate(state === 'ok' ? 60 : [80, 60, 80]);
 }
 
-/* ---------- Check-in ---------- */
 function extractId(text) {
   const t = String(text).trim();
   try {
@@ -434,14 +414,12 @@ function checkIn(raw) {
     return;
   }
 
-  // nothing is saved yet: show the name and wait for the payment + Save
   show('warn', `Session ${curSession()}: enter payment, then press Save`, st, { id: st.id, form: true });
 }
 
-/* ---------- Save (check-in + payment together) ---------- */
 function savePayment() {
   if (!current) return;
-  const st = index.get(norm(current.id)) || current;   // live object (list may have been refreshed)
+  const st = index.get(norm(current.id)) || current;  
   if (isRegistered(st)) return;
   const session = curSession();
 
@@ -452,7 +430,7 @@ function savePayment() {
 
   const bal = balRaw === '' ? 0 : Math.max(parseFloat(balRaw) || 0, 0);
   const ts = Date.now();
-  const group = uid();              // links the check-in and its payment
+  const group = uid();              
 
   records.push({ uid: uid(), type: 'checkin', id: st.id, name: st.name, ts, group, session, manual: isManual(), status: 'pending' });
   if (pay > 0 || balRaw !== '') {
@@ -473,7 +451,6 @@ function savePayment() {
   if (navigator.onLine && cfg.url) sync(true).then(() => refreshStudents(true));
 }
 
-/* ---------- Camera ---------- */
 async function startCamera() {
   if (scanning) return;
   if (typeof Html5Qrcode === 'undefined') { toast('Scanner library did not load', 'bad'); return; }
@@ -510,7 +487,6 @@ function onScan(text) {
   checkIn(text);
 }
 
-/* ---------- Server ---------- */
 function needCfg() {
   if (!cfg.url || !cfg.code) { toast('Enter the Web App URL and secret code in Settings', 'bad'); return true; }
   return false;
@@ -548,8 +524,7 @@ async function refreshStudents(silent = false) {
     if (data.session) meta.serverSession = data.session;
     if (Array.isArray(data.totals)) meta.totals = data.totals;
 
-    // the server is the truth (it resets after startNewSession),
-    // but keep what this device saved and hasn't synced yet
+    
     const byId = new Map(students.map(x => [norm(x.id), x]));
     records.filter(r => r.status === 'pending').forEach(r => {
       const st = byId.get(norm(r.id));
@@ -602,7 +577,6 @@ async function sync(silent = false) {
       };
       let data;
       try {
-        // text/plain avoids a CORS preflight, which Apps Script cannot answer
         data = await request(cfg.url, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -636,7 +610,6 @@ async function sync(silent = false) {
   }
 }
 
-/* ---------- Settings actions ---------- */
 async function copyUnsynced() {
   const list = records.filter(r => r.status !== 'synced');
   if (!list.length) { toast('No unsynced records'); return; }
@@ -669,7 +642,6 @@ function clearFailed() {
   toast('Failed records cleared', 'ok');
 }
 
-/* ---------- Wire up ---------- */
 function init() {
   const sc = document.createElement('span');
   sc.className = 'chip';

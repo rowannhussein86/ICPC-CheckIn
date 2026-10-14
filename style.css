@@ -230,7 +230,6 @@ section[hidden] {
   display: none;
 }
 .cam::before {
-  /* corner brackets */
   content: "";
   position: absolute;
   inset: 18%;
@@ -621,7 +620,6 @@ nav button[aria-selected="true"] {
   }
 }
 
-/* Group badge shown after scanning a student */
 .group-badge {
   display: inline-block;
   padding: 4px 10px;

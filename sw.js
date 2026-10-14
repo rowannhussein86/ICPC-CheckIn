@@ -14,7 +14,6 @@ const SHELL = [
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    // add one by one so a missing file (e.g. icon) doesn't break the install
     await Promise.allSettled(SHELL.map(async url => {
       const isCross = new URL(url, self.location).origin !== self.location.origin;
       const res = await fetch(new Request(url, { mode: isCross ? 'no-cors' : 'same-origin' }));
@@ -45,7 +44,6 @@ self.addEventListener('fetch', event => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req, { ignoreSearch: true });
 
-    // refresh in the background, serve the cached copy immediately
     const refresh = fetch(req).then(res => {
       if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
       return res;
