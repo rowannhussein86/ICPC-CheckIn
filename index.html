@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0E1F3D">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Check-in">
+   
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <title>ICPC Check-in</title>
+</head>
+
+<body>
+
+<header>
+  <div class="top">
+    <strong class="app">ICPC Check-in</strong>
+    <span class="chip">
+        <i id="dot" class="dot"></i>
+        <span id="netTxt">Online</span>
+    </span>
+  </div>
+  <div class="chips">
+    <span class="chip">Students <b id="cStudents">0</b></span>
+    <span class="chip">Pending <b id="cPending">0</b></span>
+    <span class="chip bad" id="chipFail" hidden>Failed <b id="cFail">0</b></span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== Scan ===== -->
+  <section id="view-scan">
+    <div class="cam">
+        <div id="reader"></div>
+        <button class="btn blue cam-btn"
+                    id="camBtn"
+                    type="button">
+            Start Camera
+        </button>
+    </div>
+
+    <div id="banner" class="banner" hidden>
+      The student list is empty on this device. Open Settings and download it while you have an internet connection before the session.
+      <br>
+      <button class="btn ghost" type="button" data-go="set">Open Settings</button>
+    </div>
+
+    <div id="verdict" class="verdict" aria-live="polite">
+      <div class="v-idle" id="vIdle">Point the camera at the QR code</div>
+      <div id="vBody" hidden>
+        <div class="v-title" id="vTitle"></div>
+        <div class="v-name" id="vName"></div>
+        <div id="vMeta"></div>
+        <div class="owed" id="vOwed" hidden></div>
+        <div class="note" id="vNote" hidden></div>
+        <div class="pay" id="vPay" hidden>
+          <div class="row">
+            <div>
+              <label for="payIn">Paid Today</label>
+              <input type="number" id="payIn" inputmode="decimal" placeholder="0">
+            </div>
+            <div>
+              <label for="balIn">Remaining</label>
+              <input type="number" id="balIn" inputmode="decimal" placeholder="0">
+            </div>
+          </div>
+          <button class="btn light block" id="payBtn" type="button">Save Payment</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="manual">
+      <input type="text" id="manualId" placeholder="Enter ID manually" autocomplete="off" autocapitalize="off">
+      <button class="btn" id="manualBtn" type="button">Check In</button>
+    </div>
+  </section>
+
+  <!-- ===== Log ===== -->
+  <section id="view-log" hidden>
+    <div class="sum">
+      <div><b id="sTotal">0</b>Total</div>
+      <div><b id="sSynced">0</b>Synced</div>
+      <div><b id="sPending">0</b>Pending</div>
+      <div><b id="sFail">0</b>Failed</div>
+    </div>
+    <ul class="log" id="logList"></ul>
+  </section>
+
+  <!-- ===== Settings ===== -->
+  <section id="v1iew-set" hidden>
+    <label for="urlIn">Web App URL (Apps Script)</label>
+    <input type="url" id="urlIn" class="ltr" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+
+    <label for="codeIn">Secret Code</label>
+    <input type="password" id="codeIn" class="ltr" placeholder="****" autocomplete="off">
+
+    <div class="hint">It will be saved on this device once, so you will not need to enter it for every student.</div>
+
+    <div class="set-actions">
+      <button class="btn blue" id="refreshBtn" type="button">Refresh Student List</button>
+      <div class="hint" id="studentsInfo"></div>
+      <button class="btn" id="syncBtn" type="button">Sync Now</button>
+      <div class="hint" id="syncInfo"></div>
+      <button class="btn ghost" id="copyBtn" type="button">Copy Unsynced Records</button>
+      <button class="btn ghost" id="clearBtn" type="button">Clear Synced Records</button>
+    </div>
+  </section>
+
+</main>
+
+<nav role="tablist">
+  <button type="button" role="tab" data-go="scan" aria-selected="true">Scan</button>
+  <button type="button" role="tab" data-go="log" aria-selected="false">Log</button>
+  <button type="button" role="tab" data-go="set" aria-selected="false">Settings</button>
+</nav>
+
+<div id="toast" role="status"></div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
